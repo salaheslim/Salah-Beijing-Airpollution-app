@@ -9,9 +9,9 @@ from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
 
 # Load dataset (assuming it's available locally as 'enhanced_dataset.csv')
-@st.cache_data
-def load_data():
-    return pd.read_csv(/content/drive/MyDrive/assessment.st20313571/combined_output.csv)
+#@st.cache_data
+#def load_data():
+    #return pd.read_csv(/content/drive/MyDrive/assessment.st20313571/combined_output.csv)
 
 # Page 1: Data Overview
 def data_overview(data):
