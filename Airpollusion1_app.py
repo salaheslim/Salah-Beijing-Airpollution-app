@@ -11,7 +11,7 @@ import numpy as np
 # Load dataset (assuming it's available locally as 'enhanced_dataset.csv')
 @st.cache_data
 def load_data():
-    return pd.read_csv(https://drive.google.com/file/d/1M8AtBr3JyM56x2QHVw1d7aNmssP7TC42/view?usp=drive_link)
+    return pd.read_csv("https://drive.google.com/file/d/1M8AtBr3JyM56x2QHVw1d7aNmssP7TC42/view?usp=drive_link")
 
 # Page 1: Data Overview
 def data_overview(data):
