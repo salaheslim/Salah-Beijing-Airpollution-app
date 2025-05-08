@@ -20,7 +20,7 @@ import numpy as np
 
 @st.cache_data
 def load_data():
-    url = "https://drive.google.com/uc?id=1M8AtBr3JyM56x2QHVw1d7aNmssP7TC42"
+    url = "/content/drive/MyDrive/data sets/Merged cities /analyzed_data.csv"
     return pd.read_csv(url, on_bad_lines='skip')
 
 
