@@ -60,32 +60,53 @@ def data_overview(data):
 
 # Page 2: Exploratory Data Analysis
 def eda(data):
-    st.title("Exploratory Data Analysis (EDA)")
-    st.write("Visual insights into the dataset.")
+    st.title("📊 Exploratory Data Analysis (EDA)")
+    st.write("This section provides visual insights into the dataset.")
 
     numeric_data = data.select_dtypes(include=['float64', 'int64'])
 
-    st.write("### Correlation Heatmap")
-    corr = numeric_data.corr()
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(corr, annot=True, cmap='coolwarm')
-    st.pyplot(plt.gcf())
-    plt.clf()
+    if numeric_data.empty:
+        st.warning("No numeric columns available for EDA.")
+        return
 
-    st.write("### Histogram")
-    column = st.selectbox("Select a column for histogram", numeric_data.columns)
-    plt.figure(figsize=(10, 6))
-    sns.histplot(data[column].dropna(), kde=True, bins=30)
-    st.pyplot(plt.gcf())
-    plt.clf()
+    tab1, tab2, tab3 = st.tabs(["📉 Correlation Heatmap", "📊 Histogram", "🔁 Scatter Plot"])
 
-    st.write("### Scatter Plot")
-    col1 = st.selectbox("Select X-axis column", numeric_data.columns, key="scatter_x")
-    col2 = st.selectbox("Select Y-axis column", numeric_data.columns, key="scatter_y")
-    plt.figure(figsize=(10, 6))
-    sns.scatterplot(x=data[col1], y=data[col2])
-    st.pyplot(plt.gcf())
-    plt.clf()
+    with tab1:
+        st.subheader("Correlation Heatmap")
+        st.caption("Shows pairwise correlation between numeric features.")
+
+        corr = numeric_data.corr()
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
+        st.pyplot(plt)
+
+    with tab2:
+        st.subheader("Histogram")
+        st.caption("View distribution of a selected numeric column.")
+
+        hist_col = st.selectbox("Select a column for histogram", numeric_data.columns, key="hist")
+        bins = st.slider("Number of bins", min_value=5, max_value=100, value=30, step=5)
+
+        plt.figure(figsize=(10, 6))
+        sns.histplot(data[hist_col], kde=True, bins=bins, color='skyblue')
+        plt.title(f"Histogram of {hist_col}")
+        st.pyplot(plt)
+
+    with tab3:
+        st.subheader("Scatter Plot")
+        st.caption("Visualize relationships between two numeric variables.")
+
+        col1 = st.selectbox("Select X-axis column", numeric_data.columns, key="x_col")
+        col2 = st.selectbox("Select Y-axis column", numeric_data.columns, key="y_col")
+
+        if col1 != col2:
+            plt.figure(figsize=(10, 6))
+            sns.scatterplot(x=data[col1], y=data[col2], alpha=0.7)
+            plt.title(f"{col1} vs {col2}")
+            st.pyplot(plt)
+        else:
+            st.info("Please select different columns for X and Y axes.")
+
 
 # Page 3: Modeling and Prediction
 def modeling_and_prediction(data):
