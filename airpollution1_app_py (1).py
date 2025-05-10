@@ -14,20 +14,49 @@ def load_data():
 
 # Page 1: Data Overview
 def data_overview(data):
-    st.title("Data Overview")
-    st.write("Basic information about the dataset.")
+    st.title("📊 Data Overview")
+    st.write("This page provides a structured overview of the dataset you are working with.")
 
-    st.write("### Dataset Shape")
-    st.write(f"Rows: {data.shape[0]}, Columns: {data.shape[1]}")
+    # Sidebar option to select number of rows
+    num_rows = st.sidebar.slider("Number of rows to preview", min_value=5, max_value=50, value=5, step=5)
 
-    st.write("### Sample Data")
-    st.write(data.head())
+    # Use columns to display shape and data types side-by-side
+    col1, col2 = st.columns(2)
 
-    st.write("### Summary Statistics")
-    st.write(data.describe())
+    with col1:
+        st.subheader("📐 Dataset Shape")
+        st.metric(label="Rows", value=data.shape[0])
+        st.metric(label="Columns", value=data.shape[1])
 
-    st.write("### Data Types")
-    st.write(data.dtypes)
+    with col2:
+        st.subheader("🧬 Data Types")
+        st.dataframe(data.dtypes.rename("Type").reset_index().rename(columns={"index": "Column"}))
+
+    # Expanders for better layout
+    with st.expander("🔍 Preview Sample Data"):
+        st.dataframe(data.head(num_rows))
+
+    with st.expander("📈 Summary Statistics"):
+        st.dataframe(data.describe())
+
+    with st.expander("📑 Raw Data (Optional)"):
+        st.dataframe(data)
+
+    # Optional: Show categorical column distribution
+    categorical_cols = data.select_dtypes(include=['object', 'category']).columns
+    if len(categorical_cols) > 0:
+        st.subheader("🧮 Categorical Column Distribution")
+        selected_cat_col = st.selectbox("Select a categorical column to visualize", categorical_cols)
+        if selected_cat_col:
+            cat_counts = data[selected_cat_col].value_counts().reset_index()
+            cat_counts.columns = [selected_cat_col, 'Count']
+
+            plt.figure(figsize=(10, 5))
+            sns.barplot(data=cat_counts, x=selected_cat_col, y='Count')
+            plt.xticks(rotation=45)
+            st.pyplot(plt)
+    else:
+        st.info("No categorical columns available for distribution plot.")
 
 # Page 2: Exploratory Data Analysis
 def eda(data):
