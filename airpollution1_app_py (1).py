@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
-
+import io
 # Load data with caching
 @st.cache_data
 def load_data():
@@ -59,18 +59,28 @@ def data_overview(data):
         st.info("No categorical columns available for distribution plot.")
 
 # Page 2: Exploratory Data Analysis
+import io
+
 def eda(data):
     st.title("📊 Exploratory Data Analysis (EDA)")
     st.write("This section provides visual insights into the dataset.")
 
     numeric_data = data.select_dtypes(include=['float64', 'int64'])
+    categorical_data = data.select_dtypes(include=['object', 'category'])
 
     if numeric_data.empty:
         st.warning("No numeric columns available for EDA.")
         return
 
-    tab1, tab2, tab3 = st.tabs(["📉 Correlation Heatmap", "📊 Histogram", "🔁 Scatter Plot"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📉 Correlation Heatmap", 
+        "📊 Histogram", 
+        "🔁 Scatter Plot", 
+        "📦 Box Plot", 
+        "📈 Line Chart"
+    ])
 
+    # Tab 1: Correlation Heatmap
     with tab1:
         st.subheader("Correlation Heatmap")
         st.caption("Shows pairwise correlation between numeric features.")
@@ -80,32 +90,80 @@ def eda(data):
         sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
         st.pyplot(plt)
 
+    # Tab 2: Histogram
     with tab2:
         st.subheader("Histogram")
-        st.caption("View distribution of a selected numeric column.")
-
         hist_col = st.selectbox("Select a column for histogram", numeric_data.columns, key="hist")
-        bins = st.slider("Number of bins", min_value=5, max_value=100, value=30, step=5)
+        bins = st.slider("Number of bins", min_value=5, max_value=100, value=30)
 
         plt.figure(figsize=(10, 6))
-        sns.histplot(data[hist_col], kde=True, bins=bins, color='skyblue')
+        sns.histplot(data[hist_col], kde=True, bins=bins, color='orange')
         plt.title(f"Histogram of {hist_col}")
         st.pyplot(plt)
 
+        # Save and download
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png")
+        st.download_button("Download Histogram as PNG", buf.getvalue(), file_name="histogram.png", mime="image/png")
+
+    # Tab 3: Scatter Plot
     with tab3:
         st.subheader("Scatter Plot")
-        st.caption("Visualize relationships between two numeric variables.")
+        x = st.selectbox("X-axis", numeric_data.columns, key="scatter_x")
+        y = st.selectbox("Y-axis", numeric_data.columns, key="scatter_y")
 
-        col1 = st.selectbox("Select X-axis column", numeric_data.columns, key="x_col")
-        col2 = st.selectbox("Select Y-axis column", numeric_data.columns, key="y_col")
-
-        if col1 != col2:
+        if x != y:
             plt.figure(figsize=(10, 6))
-            sns.scatterplot(x=data[col1], y=data[col2], alpha=0.7)
-            plt.title(f"{col1} vs {col2}")
+            sns.scatterplot(x=data[x], y=data[y], alpha=0.7)
+            plt.title(f"{x} vs {y}")
             st.pyplot(plt)
+
+            # Save and download
+            buf = io.BytesIO()
+            plt.savefig(buf, format="png")
+            st.download_button("Download Scatter Plot as PNG", buf.getvalue(), file_name="scatterplot.png", mime="image/png")
         else:
             st.info("Please select different columns for X and Y axes.")
+
+    # Tab 4: Box Plot
+    with tab4:
+        st.subheader("Box Plot")
+        if not categorical_data.empty:
+            cat_col = st.selectbox("Select Categorical Column", categorical_data.columns)
+            num_col = st.selectbox("Select Numeric Column", numeric_data.columns, key="boxplot")
+
+            plt.figure(figsize=(10, 6))
+            sns.boxplot(x=data[cat_col], y=data[num_col])
+            plt.xticks(rotation=45)
+            plt.title(f"{num_col} Distribution across {cat_col}")
+            st.pyplot(plt)
+
+            buf = io.BytesIO()
+            plt.savefig(buf, format="png")
+            st.download_button("Download Box Plot as PNG", buf.getvalue(), file_name="boxplot.png", mime="image/png")
+        else:
+            st.info("No categorical columns found for box plotting.")
+
+    # Tab 5: Line Chart (for time series)
+    with tab5:
+        st.subheader("Line Chart")
+        if 'date' in data.columns or 'datetime' in data.columns:
+            date_col = 'date' if 'date' in data.columns else 'datetime'
+            data[date_col] = pd.to_datetime(data[date_col])
+            line_col = st.selectbox("Select Numeric Column to Plot", numeric_data.columns, key="linechart")
+
+            plt.figure(figsize=(10, 6))
+            sns.lineplot(x=data[date_col], y=data[line_col])
+            plt.title(f"{line_col} Over Time")
+            plt.xticks(rotation=45)
+            st.pyplot(plt)
+
+            buf = io.BytesIO()
+            plt.savefig(buf, format="png")
+            st.download_button("Download Line Chart as PNG", buf.getvalue(), file_name="linechart.png", mime="image/png")
+        else:
+            st.info("No datetime column found. Please ensure your dataset has a 'date' or 'datetime' column.")
+
 
 
 # Page 3: Modeling and Prediction
