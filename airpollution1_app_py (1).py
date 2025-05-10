@@ -3,8 +3,10 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.svm import SVR
 import numpy as np
 import io
 # Load data with caching
@@ -167,41 +169,82 @@ def eda(data):
 
 
 # Page 3: Modeling and Prediction
-def modeling_and_prediction(data):
-    st.title("Modeling and Prediction")
-    st.write("Train a model and make predictions.")
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVR
 
-    target = st.selectbox("Select Target Variable", data.columns)
-    features = st.multiselect("Select Feature Variables", [col for col in data.columns if col != target])
+import io
+
+def modeling_and_prediction(data):
+    st.title("🤖 Modeling and Prediction")
+    st.write("Train a regression model and evaluate its performance.")
+
+    target = st.selectbox("🎯 Select Target Variable", data.columns)
+    features = st.multiselect("🧮 Select Feature Variables", [col for col in data.columns if col != target])
 
     if target and features:
-        try:
-            X = data[features].dropna()
-            y = data[target].loc[X.index]
+        X = data[features]
+        y = data[target]
 
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        # Model selection
+        st.subheader("🔧 Model Configuration")
+        model_type = st.selectbox("Choose a Regression Model", ["Random Forest", "Linear Regression", "Support Vector Regressor (SVR)"])
+
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Train model
+        if model_type == "Random Forest":
             model = RandomForestRegressor(random_state=42)
-            model.fit(X_train, y_train)
+        elif model_type == "Linear Regression":
+            model = LinearRegression()
+        elif model_type == "Support Vector Regressor (SVR)":
+            model = SVR()
 
-            y_pred = model.predict(X_test)
-            rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-            r2 = r2_score(y_test, y_pred)
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
 
-            st.write("### Model Performance")
-            st.write(f"RMSE: {rmse:.2f}")
-            st.write(f"R²: {r2:.2f}")
+        # Evaluation
+        st.subheader("📈 Model Performance")
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        r2 = r2_score(y_test, y_pred)
+        st.metric("RMSE", f"{rmse:.2f}")
+        st.metric("R² Score", f"{r2:.2f}")
 
-            st.write("### Feature Importance")
+        # Predicted vs Actual Plot
+        st.subheader("🔍 Predicted vs Actual Plot")
+        plt.figure(figsize=(10, 6))
+        sns.scatterplot(x=y_test, y=y_pred, alpha=0.6)
+        plt.xlabel("Actual")
+        plt.ylabel("Predicted")
+        plt.title("Actual vs Predicted")
+        st.pyplot(plt)
+
+        # Download button for predictions
+        results_df = pd.DataFrame({"Actual": y_test, "Predicted": y_pred})
+        csv_data = results_df.to_csv(index=False).encode("utf-8")
+        st.download_button("📥 Download Predictions as CSV", csv_data, file_name="predictions.csv", mime="text/csv")
+
+        # Feature Importance for tree-based models
+        if model_type == "Random Forest":
+            st.subheader("📊 Feature Importance")
             importance = model.feature_importances_
-            feature_importance = pd.DataFrame({'Feature': features, 'Importance': importance}).sort_values(by='Importance', ascending=False)
-            st.write(feature_importance)
+            feature_importance_df = pd.DataFrame({
+                'Feature': features,
+                'Importance': importance
+            }).sort_values(by='Importance', ascending=False)
+            st.write(feature_importance_df)
 
+            # Plot importance
             plt.figure(figsize=(10, 6))
-            sns.barplot(x='Importance', y='Feature', data=feature_importance)
-            st.pyplot(plt.gcf())
-            plt.clf()
-        except Exception as e:
-            st.error(f"Error during modeling: {e}")
+            sns.barplot(x='Importance', y='Feature', data=feature_importance_df, palette='viridis')
+            plt.title("Feature Importance")
+            st.pyplot(plt)
+
+            # Download feature importance
+            csv_imp = feature_importance_df.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Download Feature Importance as CSV", csv_imp, file_name="feature_importance.csv", mime="text/csv")
+
 
 # Main app logic
 def main():
