@@ -82,15 +82,15 @@ def eda(data):
         "📈 Line Chart"
     ])
 
-    # Tab 1: Correlation Heatmap
-    with tab1:
-        st.subheader("Correlation Heatmap")
-        st.caption("Shows pairwise correlation between numeric features.")
+    # # Tab 1: Correlation Heatmap
+    # with tab1:
+    #     st.subheader("Correlation Heatmap")
+    #     st.caption("Shows pairwise correlation between numeric features.")
 
-        corr = numeric_data.corr()
-        plt.figure(figsize=(10, 6))
-        sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
-        st.pyplot(plt)
+    #     corr = numeric_data.corr()
+    #     plt.figure(figsize=(10, 6))
+    #     sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
+    #     st.pyplot(plt)
 
     # Tab 2: Histogram
     with tab2:
