@@ -1,3 +1,6 @@
+%%writefile app.py
+# import module
+
 import streamlit as st
 import pandas as pd
 import seaborn as sns
@@ -181,9 +184,8 @@ def eda(data):
 
 
 
+
 # Page 3: Modeling and Prediction
-
-
 def modeling_and_prediction(data):
     st.title("🤖 Modeling and Prediction")
     st.write("Train a regression model and evaluate its performance.")
@@ -197,10 +199,10 @@ def modeling_and_prediction(data):
 
         # Model selection
         st.subheader("🔧 Model Configuration")
-        model_type = st.selectbox("Choose a Regression Model", ["Random Forest", "Linear Regression", "Support Vector Regressor (SVR)"])
+        model_type = st.selectbox("Choose a Regression Model", ["Random Forest", "K-Nearest Neighbors", "Linear Regression", "AdaBoost"])
 
-        # Feature Scaling (for SVR)
-        if model_type == "Support Vector Regressor (SVR)":
+        # Feature Scaling (for KNN and AdaBoost)
+        if model_type in ["K-Nearest Neighbors", "AdaBoost"]:
             scaler = StandardScaler()
             X = scaler.fit_transform(X)
 
@@ -212,13 +214,18 @@ def modeling_and_prediction(data):
             model = RandomForestRegressor(random_state=42)
         elif model_type == "Linear Regression":
             model = LinearRegression()
-        elif model_type == "Support Vector Regressor (SVR)":
-            model = SVR()
+        elif model_type == "K-Nearest Neighbors":
+            model = KNeighborsRegressor()
+        elif model_type == "AdaBoost":
+            model = AdaBoostRegressor(random_state=42)
 
-        # Hyperparameter tuning for Random Forest
+        # Hyperparameter tuning for Random Forest and KNN
         if model_type == "Random Forest":
             n_estimators = st.slider("Number of Trees", min_value=10, max_value=500, value=100)
             model = RandomForestRegressor(n_estimators=n_estimators, random_state=42)
+        elif model_type == "K-Nearest Neighbors":
+            n_neighbors = st.slider("Number of Neighbors", min_value=1, max_value=50, value=5)
+            model = KNeighborsRegressor(n_neighbors=n_neighbors)
 
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
@@ -258,7 +265,7 @@ def modeling_and_prediction(data):
         csv_data = results_df.to_csv(index=False).encode("utf-8")
         st.download_button("📥 Download Predictions as CSV", csv_data, file_name="predictions.csv", mime="text/csv")
 
-        # Feature Importance for tree-based models
+        # Feature Importance for Random Forest
         if model_type == "Random Forest":
             st.subheader("📊 Feature Importance")
             importance = model.feature_importances_
