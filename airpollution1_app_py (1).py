@@ -5,24 +5,29 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.svm import SVR
 import numpy as np
 import io
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import joblib
+
+
 # Load data with caching
 @st.cache_data
 def load_data():
     return pd.read_csv("analyzed_data.csv", on_bad_lines='skip')
 
 # Page 1: Data Overview
+
 def data_overview(data):
     st.title("📊 Data Overview")
     st.write("This page provides a structured overview of the dataset you are working with.")
 
-    # Sidebar option to select number of rows
+    # Sidebar slider for preview row count
     num_rows = st.sidebar.slider("Number of rows to preview", min_value=5, max_value=50, value=5, step=5)
 
-    # Use columns to display shape and data types side-by-side
+    # ---- Dataset Overview: Shape and Data Types ----
     col1, col2 = st.columns(2)
 
     with col1:
@@ -32,36 +37,40 @@ def data_overview(data):
 
     with col2:
         st.subheader("🧬 Data Types")
-        st.dataframe(data.dtypes.rename("Type").reset_index().rename(columns={"index": "Column"}))
+        dtypes_df = data.dtypes.rename("Type").reset_index().rename(columns={"index": "Column"})
+        st.dataframe(dtypes_df)
 
-    # Expanders for better layout
+    # ---- Expanders: Data Preview, Summary, Raw Data ----
     with st.expander("🔍 Preview Sample Data"):
         st.dataframe(data.head(num_rows))
 
     with st.expander("📈 Summary Statistics"):
-        st.dataframe(data.describe())
+        st.dataframe(data.describe(include='all'))
 
     with st.expander("📑 Raw Data (Optional)"):
         st.dataframe(data)
 
-    # Optional: Show categorical column distribution
+    # ---- Categorical Column Distribution ----
     categorical_cols = data.select_dtypes(include=['object', 'category']).columns
+
     if len(categorical_cols) > 0:
         st.subheader("🧮 Categorical Column Distribution")
         selected_cat_col = st.selectbox("Select a categorical column to visualize", categorical_cols)
-        if selected_cat_col:
-            cat_counts = data[selected_cat_col].value_counts().reset_index()
-            cat_counts.columns = [selected_cat_col, 'Count']
 
-            plt.figure(figsize=(10, 5))
-            sns.barplot(data=cat_counts, x=selected_cat_col, y='Count')
-            plt.xticks(rotation=45)
-            st.pyplot(plt)
+        # Plot selected categorical column
+        cat_counts = data[selected_cat_col].value_counts().reset_index()
+        cat_counts.columns = [selected_cat_col, 'Count']
+
+        plt.figure(figsize=(10, 5))
+        sns.barplot(data=cat_counts, x=selected_cat_col, y='Count')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        st.pyplot(plt.gcf())
+        plt.clf()  # Clear plot to prevent overlap
     else:
         st.info("No categorical columns available for distribution plot.")
 
 # Page 2: Exploratory Data Analysis
-import io
 
 def eda(data):
     st.title("📊 Exploratory Data Analysis (EDA)")
@@ -82,15 +91,16 @@ def eda(data):
         "📈 Line Chart"
     ])
 
-    # # Tab 1: Correlation Heatmap
-    # with tab1:
-    #     st.subheader("Correlation Heatmap")
-    #     st.caption("Shows pairwise correlation between numeric features.")
+    # Tab 1: Correlation Heatmap
+    with tab1:
+        st.subheader("Correlation Heatmap")
+        st.caption("Shows pairwise correlation between numeric features.")
 
-    #     corr = numeric_data.corr()
-    #     plt.figure(figsize=(10, 6))
-    #     sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
-    #     st.pyplot(plt)
+        corr = numeric_data.corr()
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
+        st.pyplot(plt)
+        plt.clf()
 
     # Tab 2: Histogram
     with tab2:
@@ -103,10 +113,10 @@ def eda(data):
         plt.title(f"Histogram of {hist_col}")
         st.pyplot(plt)
 
-        # Save and download
         buf = io.BytesIO()
         plt.savefig(buf, format="png")
         st.download_button("Download Histogram as PNG", buf.getvalue(), file_name="histogram.png", mime="image/png")
+        plt.clf()
 
     # Tab 3: Scatter Plot
     with tab3:
@@ -120,10 +130,10 @@ def eda(data):
             plt.title(f"{x} vs {y}")
             st.pyplot(plt)
 
-            # Save and download
             buf = io.BytesIO()
             plt.savefig(buf, format="png")
             st.download_button("Download Scatter Plot as PNG", buf.getvalue(), file_name="scatterplot.png", mime="image/png")
+            plt.clf()
         else:
             st.info("Please select different columns for X and Y axes.")
 
@@ -143,15 +153,17 @@ def eda(data):
             buf = io.BytesIO()
             plt.savefig(buf, format="png")
             st.download_button("Download Box Plot as PNG", buf.getvalue(), file_name="boxplot.png", mime="image/png")
+            plt.clf()
         else:
             st.info("No categorical columns found for box plotting.")
 
     # Tab 5: Line Chart (for time series)
     with tab5:
         st.subheader("Line Chart")
-        if 'date' in data.columns or 'datetime' in data.columns:
-            date_col = 'date' if 'date' in data.columns else 'datetime'
-            data[date_col] = pd.to_datetime(data[date_col])
+        date_cols = [col for col in data.columns if 'date' in col.lower() or 'time' in col.lower()]
+        if date_cols:
+            date_col = st.selectbox("Select datetime column", date_cols)
+            data[date_col] = pd.to_datetime(data[date_col], errors='coerce')
             line_col = st.selectbox("Select Numeric Column to Plot", numeric_data.columns, key="linechart")
 
             plt.figure(figsize=(10, 6))
@@ -163,17 +175,14 @@ def eda(data):
             buf = io.BytesIO()
             plt.savefig(buf, format="png")
             st.download_button("Download Line Chart as PNG", buf.getvalue(), file_name="linechart.png", mime="image/png")
+            plt.clf()
         else:
             st.info("No datetime column found. Please ensure your dataset has a 'date' or 'datetime' column.")
 
 
 
 # Page 3: Modeling and Prediction
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.svm import SVR
 
-import io
 
 def modeling_and_prediction(data):
     st.title("🤖 Modeling and Prediction")
@@ -190,6 +199,11 @@ def modeling_and_prediction(data):
         st.subheader("🔧 Model Configuration")
         model_type = st.selectbox("Choose a Regression Model", ["Random Forest", "Linear Regression", "Support Vector Regressor (SVR)"])
 
+        # Feature Scaling (for SVR)
+        if model_type == "Support Vector Regressor (SVR)":
+            scaler = StandardScaler()
+            X = scaler.fit_transform(X)
+
         # Split data
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -201,14 +215,22 @@ def modeling_and_prediction(data):
         elif model_type == "Support Vector Regressor (SVR)":
             model = SVR()
 
+        # Hyperparameter tuning for Random Forest
+        if model_type == "Random Forest":
+            n_estimators = st.slider("Number of Trees", min_value=10, max_value=500, value=100)
+            model = RandomForestRegressor(n_estimators=n_estimators, random_state=42)
+
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
 
         # Evaluation
         st.subheader("📈 Model Performance")
         rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        mae = mean_absolute_error(y_test, y_pred)
         r2 = r2_score(y_test, y_pred)
+        
         st.metric("RMSE", f"{rmse:.2f}")
+        st.metric("MAE", f"{mae:.2f}")
         st.metric("R² Score", f"{r2:.2f}")
 
         # Predicted vs Actual Plot
@@ -218,6 +240,17 @@ def modeling_and_prediction(data):
         plt.xlabel("Actual")
         plt.ylabel("Predicted")
         plt.title("Actual vs Predicted")
+        plt.grid(True)
+        st.pyplot(plt)
+
+        # Regression Plot (optional enhancement)
+        st.subheader("📉 Regression Line Plot")
+        plt.figure(figsize=(10, 6))
+        sns.regplot(x=y_test, y=y_pred, scatter_kws={'alpha':0.6})
+        plt.xlabel("Actual")
+        plt.ylabel("Predicted")
+        plt.title("Regression Line (Actual vs Predicted)")
+        plt.grid(True)
         st.pyplot(plt)
 
         # Download button for predictions
@@ -245,11 +278,20 @@ def modeling_and_prediction(data):
             csv_imp = feature_importance_df.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Download Feature Importance as CSV", csv_imp, file_name="feature_importance.csv", mime="text/csv")
 
+        # Save Model
+        st.subheader("💾 Save Trained Model")
+        save_button = st.button("Save Model")
+        if save_button:
+            model_filename = f"{model_type}_model.pkl"
+            joblib.dump(model, model_filename)
+            st.success(f"Model saved as {model_filename}")
+            with open(model_filename, 'rb') as f:
+                st.download_button("📥 Download Model", f, file_name=model_filename)
 
 # Main app logic
 def main():
     st.set_page_config(page_title="Air Pollution Analysis App", layout="wide")
-    data = load_data()
+    data = load_data()  # Ensure you have the load_data function correctly implemented
 
     st.sidebar.title("Navigation")
     page = st.sidebar.radio("Go to", ["Data Overview", "EDA", "Modeling and Prediction"])
