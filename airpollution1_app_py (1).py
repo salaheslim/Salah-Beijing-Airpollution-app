@@ -1,5 +1,3 @@
-%%writefile app.py
-# import module
 
 import streamlit as st
 import pandas as pd
