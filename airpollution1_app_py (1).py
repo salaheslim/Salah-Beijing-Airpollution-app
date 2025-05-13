@@ -96,8 +96,10 @@ def eda(data):
     with tab1:
         st.subheader("Correlation Heatmap")
         st.caption("Shows pairwise correlation between numeric features.")
+        pollutants = ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']
+        weather = ['TEMP', 'PRES', 'DEWP', 'RAIN', 'WSPM']
 
-        corr = numeric_data.corr()
+        corr = numeric_data[pollutants+weather].corr()
         plt.figure(figsize=(10, 6))
         sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
         st.pyplot(plt)
