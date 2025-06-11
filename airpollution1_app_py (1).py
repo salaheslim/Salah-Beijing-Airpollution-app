@@ -48,7 +48,7 @@ def data_overview(data):
     with st.expander("📈 Summary Statistics"):
         st.dataframe(data.describe(include='all'))
 
-    with st.expander("📑 Raw Data (Optional)"):
+    with st.expander("📑 Raw Data"):
         st.dataframe(data)
 
     # ---- Categorical Column Distribution ----
