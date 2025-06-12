@@ -500,22 +500,19 @@ def modeling_and_prediction(data):
                 st.download_button("Download StandardScaler", f, file_name=scaler_filename, mime="application/octet-stream")
 
 def main():
-   st.set_page_config(page_title="Beijing Air Pollution Analysis App", layout="wide")
- 
-   data = load_data() # Ensure you have the load_data function correctly implemented
-
-   st.sidebar.title("Navigation")
-   page = st.sidebar.radio("Go to", ["Data Overview", "EDA", "Modeling and Prediction"])
-
-   if page == "Data Overview":
+    st.set_page_config(page_title="Beijing Air Pollution Analysis App", layout="wide") 
+    data = load_data() # Ensure you have the load_data function correctly implemented
+    st.sidebar.title("Navigation")
+    page = st.sidebar.radio("Go to", ["Data Overview", "EDA", "Modeling and Prediction"])
+    if page == "Data Overview":
         data_overview(data)
-   elif page == "EDA":
+    elif page == "EDA":
         eda(data)
-   elif page == "Modeling and Prediction":
+    elif page == "Modeling and Prediction":
         modeling_and_prediction(data)
-
-   if __name__ == "__main__":
+    if __name__ == "__main__":
     main()
+    
 # import streamlit as st
 # import pandas as pd
 # import seaborn as sns
