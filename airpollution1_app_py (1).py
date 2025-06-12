@@ -1,6 +1,5 @@
 # app.py
 
-
 import streamlit as st
 import pandas as pd
 import seaborn as sns
@@ -8,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import io # For in-memory file operations (downloading plots)
 import joblib # For saving/loading models and scalers
+import os # Import os for path joining
 
 # Scikit-learn imports for models and preprocessing
 from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor, RandomForestClassifier
@@ -21,30 +21,32 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, a
 # --- GLOBAL DATA AND MODEL LOADING ---
 # This section loads your fully preprocessed data and trained models/scalers once when the app starts.
 
+# Define the base path for your data and models in Google Drive
+# IMPORTANT: MAKE SURE THIS PATH IS EXACTLY WHERE YOU SAVED YOUR FILES.
+# Using 'analyzed_data1.csv' as per your last provided path.
+GOOGLE_DRIVE_BASE_PATH = "/content/drive/MyDrive/data sets/Merged cities/"
+
 @st.cache_data # Cache the DataFrame loading for performance
 def load_and_preprocess_data_for_app(): # Renamed to be more descriptive
     try:
-        # Load the saved, fully preprocessed DataFrame
-        # Using relative path is best if the file is in the same directory as app.py
-        df_app = pd.read_csv("analyzed_data.csv") 
+        # Load the saved, fully preprocessed DataFrame from the absolute path
+        df_app = pd.read_csv(os.path.join(GOOGLE_DRIVE_BASE_PATH, "analyzed_data1.csv")) # CORRECTED FILE NAME AND PATH USAGE
 
         # --- CRITICAL FIXES FOR DATA TYPES AFTER CSV LOAD ---
-        # Ensure 'Date' is datetime (often saved as string in CSV) to avoid serialization errors and for plotting
+        # Ensure 'Date' is datetime (often saved as string in CSV)
         if 'Date' in df_app.columns:
-            df_app['Date'] = pd.to_datetime(df_app['Date'], errors='coerce') # 'coerce' turns unparseable dates into NaT
-            df_app.dropna(subset=['Date'], inplace=True) # Drop rows where Date conversion failed (important for time series)
+            df_app['Date'] = pd.to_datetime(df_app['Date'], errors='coerce') 
+            df_app.dropna(subset=['Date'], inplace=True) # Drop rows where Date conversion failed
             
         # Ensure 'year_month' is handled correctly if needed for plotting or other logic
         if 'year_month' in df_app.columns:
             try:
-                # Convert to PeriodDtype for consistency with notebook (if relevant for app logic)
-                # Or just ensure it's a string if only used for x-axis labels in some plots
                 df_app['year_month'] = df_app['year_month'].astype(str).str.replace(r'(\d{4})-(\d{2})', r'\1-\2-01').astype('datetime64[ns]').dt.to_period('M')
             except Exception as e:
                 st.warning(f"Could not convert 'year_month' to PeriodDtype. Keeping as string/object. Error: {e}")
 
     except FileNotFoundError:
-        st.error("Error: 'analyzed_data.csv' not found. Please ensure your full preprocessing pipeline is run in your notebook and the final DataFrame is saved to this name in the same directory as app.py.")
+        st.error(f"Error: 'analyzed_data1.csv' not found at {os.path.join(GOOGLE_DRIVE_BASE_PATH, 'analyzed_data1.csv')}. Please ensure the file exists there.")
         st.stop() # Stop the app if data can't be loaded
     return df_app
 
@@ -55,23 +57,23 @@ def load_trained_models_and_scaler(): # Renamed to load_trained_models_and_scale
     trained_model_clf = None
     
     try:
-        trained_model_reg = joblib.load('linear_regression_model.pkl') 
+        trained_model_reg = joblib.load(os.path.join(GOOGLE_DRIVE_BASE_PATH, 'linear_regression_model.pkl')) 
     except FileNotFoundError:
-        st.warning("Warning: 'linear_regression_model.pkl' not found. Regression model functionality will be limited.")
+        st.warning(f"Warning: 'linear_regression_model.pkl' not found at {os.path.join(GOOGLE_DRIVE_BASE_PATH, 'linear_regression_model.pkl')}. Regression model functionality will be limited.")
     except Exception as e:
         st.error(f"Error loading regression model: {e}")
 
     try:
-        trained_scaler = joblib.load('standard_scaler.pkl') 
+        trained_scaler = joblib.load(os.path.join(GOOGLE_DRIVE_BASE_PATH, 'standard_scaler.pkl')) 
     except FileNotFoundError:
-        st.warning("Warning: 'standard_scaler.pkl' not found. Scaling functionality will be limited.")
+        st.warning(f"Warning: 'standard_scaler.pkl' not found at {os.path.join(GOOGLE_DRIVE_BASE_PATH, 'standard_scaler.pkl')}. Scaling functionality will be limited.")
     except Exception as e:
         st.error(f"Error loading scaler: {e}")
 
     try:
-        trained_model_clf = joblib.load('random_forest_clf_model.pkl')
+        trained_model_clf = joblib.load(os.path.join(GOOGLE_DRIVE_BASE_PATH, 'random_forest_clf_model.pkl'))
     except FileNotFoundError:
-        st.warning("Warning: 'random_forest_clf_model.pkl' not found. Classification model functionality will be limited.")
+        st.warning(f"Warning: 'random_forest_clf_model.pkl' not found at {os.path.join(GOOGLE_DRIVE_BASE_PATH, 'random_forest_clf_model.pkl')}. Classification model functionality will be limited.")
     except Exception as e:
         st.error(f"Error loading classification model: {e}")
 
@@ -130,7 +132,6 @@ def data_overview(data): # 'data' here is app_data from global scope
         bool_counts.columns = [selected_bool_col, 'Count']
         
         plt.figure(figsize=(8, 5))
-        # --- FIXED: FutureWarning about palette without hue ---
         sns.barplot(data=bool_counts, x=selected_bool_col, y='Count', palette='pastel', hue=selected_bool_col, legend=False)
         plt.title(f"Distribution of {selected_bool_col}")
         st.pyplot(plt.gcf())
@@ -499,20 +500,22 @@ def modeling_and_prediction(data):
                 st.download_button("Download StandardScaler", f, file_name=scaler_filename, mime="application/octet-stream")
 
 def main():
-    st.set_page_config(page_title="Beijing air pollution Analysis App", layout="wide")
-    data = load_data()# Ensure you have the load_data function correctly implemented
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Data Overview", "EDA", "Modeling and Prediction"])
-    if page == "Data Overview":
-      data_overview(data)
-    elif page == "EDA":
+   st.set_page_config(page_title="Beijing Air Pollution Analysis App", layout="wide")
+ 
+   data = load_data() # Ensure you have the load_data function correctly implemented
+
+   st.sidebar.title("Navigation")
+   page = st.sidebar.radio("Go to", ["Data Overview", "EDA", "Modeling and Prediction"])
+
+   if page == "Data Overview":
+        data_overview(data)
+   elif page == "EDA":
         eda(data)
-    elif page == "Modeling and Prediction":
-          modeling_and_prediction(data)
+   elif page == "Modeling and Prediction":
+        modeling_and_prediction(data)
 
-if __name__ == "__main__":
-  main()
-
+   if __name__ == "__main__":
+    main()
 # import streamlit as st
 # import pandas as pd
 # import seaborn as sns
