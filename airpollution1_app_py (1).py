@@ -501,7 +501,7 @@ def modeling_and_prediction(data):
 
 def main():
     st.set_page_config(page_title="Beijing Air Pollution Analysis App", layout="wide") 
-    data = load_data() # Ensure you have the load_data function correctly implemented
+    data = load_data()
     st.sidebar.title("Navigation")
     page = st.sidebar.radio("Go to", ["Data Overview", "EDA", "Modeling and Prediction"])
     if page == "Data Overview":
