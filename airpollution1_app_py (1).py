@@ -499,7 +499,7 @@ def modeling_and_prediction(data):
                 st.download_button("Download StandardScaler", f, file_name=scaler_filename, mime="application/octet-stream")
 
 def main():
-st.set_page_config(page_title="Beijing Air Pollution Analysis App", layout="wide")
+ st.set_page_config(page_title="Beijing Air Pollution Analysis App", layout="wide")
     
     data = load_data()  # Ensure you have the load_data function correctly implemented
 
