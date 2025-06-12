@@ -500,22 +500,18 @@ def modeling_and_prediction(data):
 
 def main():
     st.set_page_config(page_title="Beijing air pollution Analysis App", layout="wide")
-    
-    data = load_data()  # Ensure you have the load_data function correctly implemented
-
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Data Overview", "EDA", "Modeling and Prediction"])
-
-    if page == "Data Overview":
-        data_overview(data)
-    elif page == "EDA":
-        eda(data)
-    elif page == "Modeling and Prediction":
-        modeling_and_prediction(data)
+    data = load_data()# Ensure you have the load_data function correctly implemented
+    st.sidebar.title("Navigation")
+    page = st.sidebar.radio("Go to", ["Data Overview", "EDA", "Modeling and Prediction"])
+    if page == "Data Overview":
+      data_overview(data)
+    elif page == "EDA":
+        eda(data)
+    elif page == "Modeling and Prediction":
+          modeling_and_prediction(data)
 
 if __name__ == "__main__":
-    main()(this is a previous code working on a streamlite app but there is a lot of error and not visualize as i need, i want you rewrite a new code code matching the new modification that we did in our model
-
+  main()
 
 # import streamlit as st
 # import pandas as pd
